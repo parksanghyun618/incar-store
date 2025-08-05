@@ -13,10 +13,11 @@
         #total, #change { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
         button { padding: 10px 20px; }
 
-        /* 새로운 판매 기록 스타일 */
+        /* 판매 기록 스타일 */
         .sales-record-item { border: 1px solid #ddd; margin-bottom: 10px; }
-        .sales-record-summary { display: flex; justify-content: space-between; padding: 10px; cursor: pointer; background-color: #f9f9f9; }
+        .sales-record-summary { display: flex; justify-content: space-between; align-items: center; padding: 10px; cursor: pointer; background-color: #f9f9f9; }
         .sales-record-details { padding: 10px; border-top: 1px solid #ddd; display: none; }
+        .delete-button { background-color: #f44336; color: white; border: none; padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -61,20 +62,20 @@
         </div>
 
     <script>
+        // 물품 정보 (나중에 재고 관리와 연동될 예정)
+        const allItems = [
+            { name: '물품 1', id: 'item1', price: 1500 },
+            { name: '물품 2', id: 'item2', price: 1200 },
+            { name: '물품 3', id: 'item3', price: 2500 }
+        ];
+
         // 물품 수량이 바뀌면 총 합계를 계산하는 함수
         function calculateTotal() {
             let total = 0;
-            const items = [
-                { id: 'item1', price: 1500 },
-                { id: 'item2', price: 1200 },
-                { id: 'item3', price: 2500 }
-            ];
-
-            items.forEach(item => {
+            allItems.forEach(item => {
                 const quantity = parseInt(document.getElementById(`${item.id}-quantity`).value) || 0;
                 total += item.price * quantity;
             });
-
             document.getElementById('total').innerText = total;
             calculateChange();
         }
@@ -84,8 +85,45 @@
             const total = parseInt(document.getElementById('total').innerText);
             const received = parseInt(document.getElementById('received-amount').value) || 0;
             const change = received - total;
-
             document.getElementById('change').innerText = Math.max(0, change);
+        }
+
+        // 판매 기록을 localStorage에 저장하는 함수
+        function saveHistoryToLocalStorage() {
+            const history = document.getElementById('sales-history').innerHTML;
+            localStorage.setItem('salesHistory', history);
+        }
+
+        // 페이지 로딩 시 localStorage에서 기록을 불러오는 함수
+        function loadHistoryFromLocalStorage() {
+            const savedHistory = localStorage.getItem('salesHistory');
+            if (savedHistory) {
+                document.getElementById('sales-history').innerHTML = savedHistory;
+            }
+        }
+        
+        // 판매 기록을 삭제하는 함수
+        function deleteSale(event) {
+            const recordItem = event.target.closest('.sales-record-item');
+            recordItem.remove();
+            saveHistoryToLocalStorage();
+        }
+
+        // 판매 기록을 페이지에 렌더링하고 이벤트 리스너를 추가하는 함수
+        function renderSaleRecord(saleRecordHTML) {
+            const salesHistory = document.getElementById('sales-history');
+            salesHistory.innerHTML = saleRecordHTML + salesHistory.innerHTML;
+
+            const newRecord = salesHistory.firstElementChild;
+            const summary = newRecord.querySelector('.sales-record-summary');
+            const details = newRecord.querySelector('.sales-record-details');
+            const deleteButton = newRecord.querySelector('.delete-button');
+
+            summary.addEventListener('click', () => {
+                details.style.display = (details.style.display === 'none' || details.style.display === '') ? 'block' : 'none';
+            });
+            deleteButton.addEventListener('click', deleteSale);
+            saveHistoryToLocalStorage();
         }
 
         // 저장 버튼 클릭 시 판매 기록을 페이지에 남기는 함수
@@ -94,14 +132,8 @@
             const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             
             let saleDetails = '<ul>';
-            const items = [
-                { name: '물품 1', quantityId: 'item1-quantity', price: 1500 },
-                { name: '물품 2', quantityId: 'item2-quantity', price: 1200 },
-                { name: '물품 3', quantityId: 'item3-quantity', price: 2500 }
-            ];
-
-            items.forEach(item => {
-                const quantity = parseInt(document.getElementById(item.quantityId).value);
+            allItems.forEach(item => {
+                const quantity = parseInt(document.getElementById(`${item.id}-quantity`).value);
                 if (quantity > 0) {
                     saleDetails += `<li>${item.name}: ${quantity}개 (${item.price * quantity}원)</li>`;
                 }
@@ -109,56 +141,47 @@
             saleDetails += '</ul>';
             
             const total = document.getElementById('total').innerText;
-            
+            const received = document.getElementById('received-amount').value;
+            const change = document.getElementById('change').innerText;
+
             const saleRecordHTML = `
                 <div class="sales-record-item">
                     <div class="sales-record-summary">
                         <span>${time} - 총 금액: ${total}원</span>
-                        <span>▼</span>
+                        <div>
+                            <button class="delete-button">삭제</button>
+                            <span>▼</span>
+                        </div>
                     </div>
                     <div class="sales-record-details">
-                        <p><strong>받은 금액:</strong> ${document.getElementById('received-amount').value}원</p>
-                        <p><strong>거스름돈:</strong> ${document.getElementById('change').innerText}원</p>
+                        <p><strong>받은 금액:</strong> ${received}원</p>
+                        <p><strong>거스름돈:</strong> ${change}원</p>
                         <p><strong>판매 목록:</strong></p>
                         ${saleDetails}
                     </div>
                 </div>
             `;
             
-            // 판매 기록을 추가하고, 펼치기/접기 기능을 추가
-            const salesHistory = document.getElementById('sales-history');
-            salesHistory.innerHTML = saleRecordHTML + salesHistory.innerHTML;
-
-            const newRecord = salesHistory.firstElementChild;
-            const summary = newRecord.querySelector('.sales-record-summary');
-            const details = newRecord.querySelector('.sales-record-details');
-
-            summary.addEventListener('click', () => {
-                if (details.style.display === 'none') {
-                    details.style.display = 'block';
-                } else {
-                    details.style.display = 'none';
-                }
-            });
+            renderSaleRecord(saleRecordHTML);
 
             // 입력창 초기화
-            items.forEach(item => {
-                document.getElementById(item.quantityId).value = 0;
+            allItems.forEach(item => {
+                document.getElementById(`${item.id}-quantity`).value = 0;
             });
             document.getElementById('received-amount').value = '';
             calculateTotal();
+            alert('판매 기록이 저장되었습니다!');
         }
 
-        // 물품 수량 입력 칸에 이벤트 리스너 추가
+        // 이벤트 리스너 설정
         document.getElementById('item1-quantity').addEventListener('input', calculateTotal);
         document.getElementById('item2-quantity').addEventListener('input', calculateTotal);
         document.getElementById('item3-quantity').addEventListener('input', calculateTotal);
-        
-        // 받은 금액 입력 칸에 이벤트 리스너 추가
         document.getElementById('received-amount').addEventListener('input', calculateChange);
-        
-        // 저장 버튼에 이벤트 리스너 추가
         document.getElementById('save-button').addEventListener('click', saveSale);
+
+        // 페이지 로딩 시 기록 불러오기
+        window.addEventListener('DOMContentLoaded', loadHistoryFromLocalStorage);
     </script>
 </body>
 </html>
