@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>편의점 계산기</title>
+    <title>인카마트 포스기</title>
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; }
         h1 { text-align: center; }
@@ -29,21 +29,21 @@
         <div class="item-row">
             <span>물품 1: </span>
             <input type="number" id="item1-price" value="1500" hidden>
-            <input type="number" id="item1-quantity" value="0" min="0"> 개
+            <input type="number" id="item1-quantity" value="" min="0"> 개
             <span class="stock-info" id="item1-stock"></span>
             <span> (1500원)</span>
         </div>
         <div class="item-row">
             <span>물품 2: </span>
             <input type="number" id="item2-price" value="1200" hidden>
-            <input type="number" id="item2-quantity" value="0" min="0"> 개
+            <input type="number" id="item2-quantity" value="" min="0"> 개
             <span class="stock-info" id="item2-stock"></span>
             <span> (1200원)</span>
         </div>
         <div class="item-row">
             <span>물품 3: </span>
             <input type="number" id="item3-price" value="2500" hidden>
-            <input type="number" id="item3-quantity" value="0" min="0"> 개
+            <input type="number" id="item3-quantity" value="" min="0"> 개
             <span class="stock-info" id="item3-stock"></span>
             <span> (2500원)</span>
         </div>
@@ -220,12 +220,18 @@
             renderSalesHistory();
 
             allItems.forEach(item => {
-                document.getElementById(`${item.id}-quantity`).value = 0;
+                document.getElementById(`${item.id}-quantity`).value = '';
             });
             document.getElementById('received-amount').value = '';
             calculateTotal();
             alert('판매 기록이 저장되었습니다!');
         }
+        
+        document.getElementById('received-amount').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                saveSale();
+            }
+        });
 
         document.getElementById('item1-quantity').addEventListener('input', calculateTotal);
         document.getElementById('item2-quantity').addEventListener('input', calculateTotal);
