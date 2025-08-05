@@ -87,4 +87,61 @@
             let saleDetails = '판매 목록:\n';
             const items = [
                 { name: '물품 1', quantityId: 'item1-quantity', price: 1500 },
-                { name
+                { name: '물품 2', quantityId: 'item2-quantity', price: 1200 },
+                { name: '물품 3', quantityId: 'item3-quantity', price: 2500 }
+            ];
+
+            items.forEach(item => {
+                const quantity = parseInt(document.getElementById(item.quantityId).value);
+                if (quantity > 0) {
+                    saleDetails += `- ${item.name}: ${quantity}개 (${item.price * quantity}원)\n`;
+                }
+            });
+            
+            const total = document.getElementById('total').innerText;
+            const received = document.getElementById('received-amount').value;
+            const change = document.getElementById('change').innerText;
+
+            const saleRecord = `
+판매일시: ${date} ${time}
+총 합계: ${total}원
+받은 금액: ${received}원
+거스름돈: ${change}원
+
+${saleDetails}
+--------------------
+`;
+            
+            // 파일을 생성하고 다운로드하는 코드
+            const blob = new Blob([saleRecord], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `판매기록_${date}_${time}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // 입력창 초기화
+            items.forEach(item => {
+                document.getElementById(item.quantityId).value = 0;
+            });
+            document.getElementById('received-amount').value = '';
+            calculateTotal(); // 초기화 후 계산
+            alert('판매 기록이 저장되었습니다!');
+        }
+
+        // 물품 수량 입력 칸에 이벤트 리스너 추가
+        document.getElementById('item1-quantity').addEventListener('input', calculateTotal);
+        document.getElementById('item2-quantity').addEventListener('input', calculateTotal);
+        document.getElementById('item3-quantity').addEventListener('input', calculateTotal);
+        
+        // 받은 금액 입력 칸에 이벤트 리스너 추가
+        document.getElementById('received-amount').addEventListener('input', calculateChange);
+        
+        // 저장 버튼에 이벤트 리스너 추가
+        document.getElementById('save-button').addEventListener('click', saveSale);
+    </script>
+</body>
+</html>
