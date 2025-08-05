@@ -112,7 +112,6 @@ ${saleDetails}
 --------------------
 `;
             
-            // 파일을 생성하고 다운로드하는 코드
             const blob = new Blob([saleRecord], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -123,12 +122,11 @@ ${saleDetails}
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            // 입력창 초기화
             items.forEach(item => {
                 document.getElementById(item.quantityId).value = 0;
             });
             document.getElementById('received-amount').value = '';
-            calculateTotal(); // 초기화 후 계산
+            calculateTotal();
             alert('판매 기록이 저장되었습니다!');
         }
 
