@@ -7,47 +7,58 @@
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; }
         h1 { text-align: center; }
-        .stock-list { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; }
-        .stock-item { margin-bottom: 15px; }
-        .stock-item span { font-weight: bold; }
-        .stock-item input { width: 80px; margin-left: 10px; }
+        .stock-table { 
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        .stock-table th, .stock-table td {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .stock-table th {
+            background-color: #f2f2f2;
+        }
+        .stock-table input {
+            width: 80px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <h1>재고 관리</h1>
     <p><a href="index.html">계산기 페이지로 돌아가기</a></p>
     
-    <div class="stock-list">
-        <div class="stock-item">
-            <span>물품 1 재고:</span>
-            <input type="number" id="stock1" value="50" min="0"> 개
-            <br><br>
-            <span>재고 추가:</span>
-            <input type="number" id="add1" value="0" min="0"> 개
-            <span>재고 감모:</span>
-            <input type="number" id="subtract1" value="0" min="0"> 개
-        </div>
-        <hr>
-        <div class="stock-item">
-            <span>물품 2 재고:</span>
-            <input type="number" id="stock2" value="30" min="0"> 개
-            <br><br>
-            <span>재고 추가:</span>
-            <input type="number" id="add2" value="0" min="0"> 개
-            <span>재고 감모:</span>
-            <input type="number" id="subtract2" value="0" min="0"> 개
-        </div>
-        <hr>
-        <div class="stock-item">
-            <span>물품 3 재고:</span>
-            <input type="number" id="stock3" value="10" min="0"> 개
-            <br><br>
-            <span>재고 추가:</span>
-            <input type="number" id="add3" value="0" min="0"> 개
-            <span>재고 감모:</span>
-            <input type="number" id="subtract3" value="0" min="0"> 개
-        </div>
-    </div>
+    <table class="stock-table">
+        <thead>
+            <tr>
+                <th>물품명</th>
+                <th>전체 재고</th>
+                <th>재고 추가</th>
+                <th>재고 감모</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>물품 1</td>
+                <td><input type="number" id="stock1" min="0"> 개</td>
+                <td><input type="number" id="add1" value="" min="0"> 개</td>
+                <td><input type="number" id="subtract1" value="" min="0"> 개</td>
+            </tr>
+            <tr>
+                <td>물품 2</td>
+                <td><input type="number" id="stock2" min="0"> 개</td>
+                <td><input type="number" id="add2" value="" min="0"> 개</td>
+                <td><input type="number" id="subtract2" value="" min="0"> 개</td>
+            </tr>
+            <tr>
+                <td>물품 3</td>
+                <td><input type="number" id="stock3" min="0"> 개</td>
+                <td><input type="number" id="add3" value="" min="0"> 개</td>
+                <td><input type="number" id="subtract3" value="" min="0"> 개</td>
+            </tr>
+        </tbody>
+    </table>
 
     <button id="save-stock-button">재고 저장</button>
 
@@ -92,12 +103,12 @@
             alert('재고가 저장되었습니다!');
             
             // 저장 후 추가/감모 입력칸 초기화 및 재고 업데이트
-            document.getElementById('add1').value = 0;
-            document.getElementById('subtract1').value = 0;
-            document.getElementById('add2').value = 0;
-            document.getElementById('subtract2').value = 0;
-            document.getElementById('add3').value = 0;
-            document.getElementById('subtract3').value = 0;
+            document.getElementById('add1').value = '';
+            document.getElementById('subtract1').value = '';
+            document.getElementById('add2').value = '';
+            document.getElementById('subtract2').value = '';
+            document.getElementById('add3').value = '';
+            document.getElementById('subtract3').value = '';
             loadStock();
         }
 
