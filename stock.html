@@ -38,98 +38,88 @@
                 <th>재고 감모</th>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td>물품 1</td>
-                <td><input type="number" id="stock1" min="0"> 개</td>
-                <td><input type="number" id="add1" value="" min="0"> 개</td>
-                <td><input type="number" id="subtract1" value="" min="0"> 개</td>
-            </tr>
-            <tr>
-                <td>물품 2</td>
-                <td><input type="number" id="stock2" min="0"> 개</td>
-                <td><input type="number" id="add2" value="" min="0"> 개</td>
-                <td><input type="number" id="subtract2" value="" min="0"> 개</td>
-            </tr>
-            <tr>
-                <td>물품 3</td>
-                <td><input type="number" id="stock3" min="0"> 개</td>
-                <td><input type="number" id="add3" value="" min="0"> 개</td>
-                <td><input type="number" id="subtract3" value="" min="0"> 개</td>
-            </tr>
-        </tbody>
+        <tbody id="stock-list">
+            </tbody>
     </table>
 
     <button id="save-stock-button">재고 저장</button>
 
     <script>
-        function loadStock() {
-            const savedStock = localStorage.getItem('stockLevels');
-            if (savedStock) {
-                const stock = JSON.parse(savedStock);
-                document.getElementById('stock1').value = stock.item1;
-                document.getElementById('stock2').value = stock.item2;
-                document.getElementById('stock3').value = stock.item3;
-            } else {
-                const initialStock = { item1: 50, item2: 30, item3: 10 };
-                localStorage.setItem('stockLevels', JSON.stringify(initialStock));
-                loadStock();
-            }
+        // 💡 여기에 구글 앱스 스크립트 배포 시 복사한 웹 앱 URL을 붙여넣으세요!
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyMLM-EZCrArJ31m84oyMnSlO0FM3QYisJWtJNfTLAZzkFGcf4uZKZw2oDiJnjBTUQD/exec';
+        
+        let allItems = [];
+
+        async function fetchPrices() {
+            const response = await fetch(`${WEB_APP_URL}?sheet=prices`);
+            const prices = await response.json();
+            return prices;
         }
 
-        function saveStock() {
-            let stock1 = parseInt(document.getElementById('stock1').value) || 0;
-            let stock2 = parseInt(document.getElementById('stock2').value) || 0;
-            let stock3 = parseInt(document.getElementById('stock3').value) || 0;
-            
-            const add1 = parseInt(document.getElementById('add1').value) || 0;
-            const subtract1 = parseInt(document.getElementById('subtract1').value) || 0;
-            const add2 = parseInt(document.getElementById('add2').value) || 0;
-            const subtract2 = parseInt(document.getElementById('subtract2').value) || 0;
-            const add3 = parseInt(document.getElementById('add3').value) || 0;
-            const subtract3 = parseInt(document.getElementById('subtract3').value) || 0;
+        async function fetchStock() {
+            const response = await fetch(`${WEB_APP_URL}?sheet=stock`);
+            const stock = await response.json();
+            return stock;
+        }
 
-            stock1 = stock1 + add1 - subtract1;
-            stock2 = stock2 + add2 - subtract2;
-            stock3 = stock3 + add3 - subtract3;
-
-            const stock = {
-                item1: stock1,
-                item2: stock2,
-                item3: stock3
-            };
+        async function saveStock(stockLevels) {
+            await fetch(`${WEB_APP_URL}?sheet=stock`, {
+                method: 'POST',
+                body: JSON.stringify({ stockLevels: stockLevels }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        
+        async function loadStock() {
+            allItems = await fetchPrices();
+            const stockListBody = document.getElementById('stock-list');
+            stockListBody.innerHTML = '';
             
-            localStorage.setItem('stockLevels', JSON.stringify(stock));
+            const currentStock = await fetchStock();
+
+            allItems.forEach(item => {
+                const stockRow = document.createElement('tr');
+                stockRow.innerHTML = `
+                    <td>${item.name}</td>
+                    <td><input type="number" id="stock-${item.item_id}" value="${currentStock[item.item_id] || 0}" min="0"> 개</td>
+                    <td><input type="number" id="add-${item.item_id}" value="" min="0"> 개</td>
+                    <td><input type="number" id="subtract-${item.item_id}" value="" min="0"> 개</td>
+                `;
+                stockListBody.appendChild(stockRow);
+            });
+        }
+
+        async function saveStockAndRender() {
+            const stockToSave = {};
+            allItems.forEach(item => {
+                const stockId = `stock-${item.item_id}`;
+                const addId = `add-${item.item_id}`;
+                const subtractId = `subtract-${item.item_id}`;
+                
+                const newStock = parseInt(document.getElementById(stockId).value) || 0;
+                const addAmount = parseInt(document.getElementById(addId).value) || 0;
+                const subtractAmount = parseInt(document.getElementById(subtractId).value) || 0;
+                
+                stockToSave[item.item_id] = newStock + addAmount - subtractAmount;
+            });
+            
+            await saveStock(stockToSave);
             alert('재고가 저장되었습니다!');
             
-            // 저장 후 추가/감모 입력칸 초기화 및 재고 업데이트
-            document.getElementById('add1').value = '';
-            document.getElementById('subtract1').value = '';
-            document.getElementById('add2').value = '';
-            document.getElementById('subtract2').value = '';
-            document.getElementById('add3').value = '';
-            document.getElementById('subtract3').value = '';
+            allItems.forEach(item => {
+                document.getElementById(`add-${item.item_id}`).value = '';
+                document.getElementById(`subtract-${item.item_id}`).value = '';
+            });
             loadStock();
         }
 
         function handleKeyDown(event) {
             if (event.key === 'Enter' || event.keyCode === 13) {
-                saveStock();
+                saveStockAndRender();
             }
         }
         
-        // 모든 입력 필드에 keydown 이벤트 리스너를 추가합니다.
-        document.getElementById('stock1').addEventListener('keydown', handleKeyDown);
-        document.getElementById('add1').addEventListener('keydown', handleKeyDown);
-        document.getElementById('subtract1').addEventListener('keydown', handleKeyDown);
-        document.getElementById('stock2').addEventListener('keydown', handleKeyDown);
-        document.getElementById('add2').addEventListener('keydown', handleKeyDown);
-        document.getElementById('subtract2').addEventListener('keydown', handleKeyDown);
-        document.getElementById('stock3').addEventListener('keydown', handleKeyDown);
-        document.getElementById('add3').addEventListener('keydown', handleKeyDown);
-        document.getElementById('subtract3').addEventListener('keydown', handleKeyDown);
-
-        document.getElementById('save-stock-button').addEventListener('click', saveStock);
+        document.getElementById('save-stock-button').addEventListener('click', saveStockAndRender);
         window.addEventListener('DOMContentLoaded', loadStock);
     </script>
 </body>
