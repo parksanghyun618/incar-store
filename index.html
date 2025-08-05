@@ -106,55 +106,85 @@
             document.getElementById('change').innerText = Math.max(0, change);
         }
 
-        function saveHistoryToLocalStorage() {
-            const history = document.getElementById('sales-history').innerHTML;
-            localStorage.setItem('salesHistory', history);
+        // 판매 기록을 localStorage에 저장하는 함수
+        function saveHistoryToLocalStorage(history) {
+            localStorage.setItem('salesHistory', JSON.stringify(history));
         }
-        
+
+        // 판매 기록을 삭제하는 함수
         function deleteSale(event) {
             const recordItem = event.target.closest('.sales-record-item');
-            const deletedData = JSON.parse(recordItem.dataset.sale);
+            const index = recordItem.dataset.index;
             
+            let salesHistory = JSON.parse(localStorage.getItem('salesHistory'));
+            const deletedRecord = salesHistory[index];
+
             const savedStock = JSON.parse(localStorage.getItem('stockLevels'));
-            for (const itemId in deletedData.items) {
-                savedStock[itemId] += deletedData.items[itemId];
+            for (const itemId in deletedRecord.items) {
+                savedStock[itemId] += deletedRecord.items[itemId];
             }
             localStorage.setItem('stockLevels', JSON.stringify(savedStock));
             loadStock();
             
-            recordItem.remove();
-            saveHistoryToLocalStorage();
-        }
-
-        function loadHistoryFromLocalStorage() {
-            const savedHistory = localStorage.getItem('salesHistory');
-            if (savedHistory) {
-                document.getElementById('sales-history').innerHTML = savedHistory;
-            }
+            salesHistory.splice(index, 1);
+            saveHistoryToLocalStorage(salesHistory);
+            renderSalesHistory();
         }
         
-        function renderSaleRecord(saleRecordHTML) {
-            const salesHistory = document.getElementById('sales-history');
-            salesHistory.innerHTML = saleRecordHTML + salesHistory.innerHTML;
+        // localStorage에서 기록을 불러와서 화면에 그리는 함수
+        function renderSalesHistory() {
+            const salesHistoryDiv = document.getElementById('sales-history');
+            salesHistoryDiv.innerHTML = '';
             
-            const newRecord = salesHistory.firstElementChild;
-            const summary = newRecord.querySelector('.sales-record-summary');
-            const details = newRecord.querySelector('.sales-record-details');
-            const deleteButton = newRecord.querySelector('.delete-button');
+            let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
+            
+            salesHistory.forEach((record, index) => {
+                let saleDetailsHtml = '<ul>';
+                for (const itemId in record.items) {
+                    const item = allItems.find(i => i.id === itemId);
+                    saleDetailsHtml += `<li>${item.name}: ${record.items[itemId]}개 (${item.price * record.items[itemId]}원)</li>`;
+                }
+                saleDetailsHtml += '</ul>';
 
-            summary.addEventListener('click', () => {
-                details.style.display = (details.style.display === 'none' || details.style.display === '') ? 'block' : 'none';
+                const saleRecordHtml = `
+                    <div class="sales-record-item" data-index="${index}">
+                        <div class="sales-record-summary">
+                            <span>${record.time} - 총 금액: ${record.total}원</span>
+                            <div>
+                                <button class="delete-button">삭제</button>
+                                <span>▼</span>
+                            </div>
+                        </div>
+                        <div class="sales-record-details">
+                            <p><strong>받은 금액:</strong> ${record.received}원</p>
+                            <p><strong>거스름돈:</strong> ${record.change}원</p>
+                            <p><strong>판매 목록:</strong></p>
+                            ${saleDetailsHtml}
+                        </div>
+                    </div>
+                `;
+                salesHistoryDiv.innerHTML += saleRecordHtml;
             });
-            deleteButton.addEventListener('click', deleteSale);
-            saveHistoryToLocalStorage();
-        }
+            
+            // 모든 기록에 대해 이벤트 리스너를 다시 연결
+            document.querySelectorAll('.sales-record-item').forEach(record => {
+                const summary = record.querySelector('.sales-record-summary');
+                const details = record.querySelector('.sales-record-details');
+                const deleteButton = record.querySelector('.delete-button');
 
+                summary.addEventListener('click', () => {
+                    details.style.display = (details.style.display === 'none' || details.style.display === '') ? 'block' : 'none';
+                });
+                deleteButton.addEventListener('click', deleteSale);
+            });
+        }
+        
+        // 저장 버튼 클릭 시 판매 기록을 남기는 함수
         function saveSale() {
             const now = new Date();
             const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             
             const savedStock = JSON.parse(localStorage.getItem('stockLevels'));
-            let saleDetails = '<ul>';
             let saleItemsData = {};
             
             let stockError = false;
@@ -167,48 +197,32 @@
                         return;
                     }
                     savedStock[item.id] -= quantity;
-                    saleDetails += `<li>${item.name}: ${quantity}개 (${item.price * quantity}원)</li>`;
                     saleItemsData[item.id] = quantity;
                 }
             });
 
-            if (stockError || saleDetails === '<ul>') return;
+            if (stockError || Object.keys(saleItemsData).length === 0) return;
 
             localStorage.setItem('stockLevels', JSON.stringify(savedStock));
             loadStock();
-
-            saleDetails += '</ul>';
             
             const total = document.getElementById('total').innerText;
             const received = document.getElementById('received-amount').value;
             const change = document.getElementById('change').innerText;
-
-            const saleData = {
-                items: saleItemsData,
+            
+            const newRecord = {
+                time: time,
                 total: total,
                 received: received,
-                change: change
+                change: change,
+                items: saleItemsData
             };
-
-            const saleRecordHTML = `
-                <div class="sales-record-item" data-sale='${JSON.stringify(saleData)}'>
-                    <div class="sales-record-summary">
-                        <span>${time} - 총 금액: ${total}원</span>
-                        <div>
-                            <button class="delete-button">삭제</button>
-                            <span>▼</span>
-                        </div>
-                    </div>
-                    <div class="sales-record-details">
-                        <p><strong>받은 금액:</strong> ${received}원</p>
-                        <p><strong>거스름돈:</strong> ${change}원</p>
-                        <p><strong>판매 목록:</strong></p>
-                        ${saleDetails}
-                    </div>
-                </div>
-            `;
             
-            renderSaleRecord(saleRecordHTML);
+            let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
+            salesHistory.unshift(newRecord);
+            
+            saveHistoryToLocalStorage(salesHistory);
+            renderSalesHistory();
 
             allItems.forEach(item => {
                 document.getElementById(`${item.id}-quantity`).value = 0;
@@ -225,7 +239,7 @@
         document.getElementById('save-button').addEventListener('click', saveSale);
 
         window.addEventListener('DOMContentLoaded', () => {
-            loadHistoryFromLocalStorage();
+            renderSalesHistory();
             loadStock();
         });
     </script>
