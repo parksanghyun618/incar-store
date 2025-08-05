@@ -81,7 +81,7 @@
 
         let currentPage = 1;
         const recordsPerPage = 10;
-        let previousDate = null; // 날짜 중복 표시 방지를 위한 변수
+        let previousDate = null;
 
         function loadStock() {
             const savedStock = localStorage.getItem('stockLevels');
@@ -156,7 +156,7 @@
             salesHistoryDiv.innerHTML = '';
             paginationDiv.innerHTML = '';
             
-            previousDate = null; // 페이지 렌더링 시 초기화
+            previousDate = null;
 
             let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
             const totalPages = Math.ceil(salesHistory.length / recordsPerPage);
@@ -183,7 +183,7 @@
                 const saleRecordHtml = `
                     <div class="sales-record-item" data-index="${globalIndex}">
                         <div class="sales-record-summary">
-                            <span>${displayDate} ${record.time} - 총 금액: ${record.total}원</span>
+                            <span>${displayDate}&nbsp;&nbsp;${record.time} - 총 금액: ${record.total}원</span>
                             <div>
                                 <button class="delete-button">삭제</button>
                                 <span>▼</span>
@@ -229,7 +229,7 @@
         
         function saveSale() {
             const now = new Date();
-            const date = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+            const date = `${now.getFullYear().toString().slice(-2)}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
             const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             
             const savedStock = JSON.parse(localStorage.getItem('stockLevels')) || {};
