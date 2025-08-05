@@ -21,14 +21,31 @@
         <div class="stock-item">
             <span>물품 1 재고:</span>
             <input type="number" id="stock1" value="50" min="0"> 개
+            <br><br>
+            <span>재고 추가:</span>
+            <input type="number" id="add1" value="0" min="0"> 개
+            <span>재고 감모:</span>
+            <input type="number" id="subtract1" value="0" min="0"> 개
         </div>
+        <hr>
         <div class="stock-item">
             <span>물품 2 재고:</span>
             <input type="number" id="stock2" value="30" min="0"> 개
+            <br><br>
+            <span>재고 추가:</span>
+            <input type="number" id="add2" value="0" min="0"> 개
+            <span>재고 감모:</span>
+            <input type="number" id="subtract2" value="0" min="0"> 개
         </div>
+        <hr>
         <div class="stock-item">
             <span>물품 3 재고:</span>
             <input type="number" id="stock3" value="10" min="0"> 개
+            <br><br>
+            <span>재고 추가:</span>
+            <input type="number" id="add3" value="0" min="0"> 개
+            <span>재고 감모:</span>
+            <input type="number" id="subtract3" value="0" min="0"> 개
         </div>
     </div>
 
@@ -42,17 +59,46 @@
                 document.getElementById('stock1').value = stock.item1;
                 document.getElementById('stock2').value = stock.item2;
                 document.getElementById('stock3').value = stock.item3;
+            } else {
+                const initialStock = { item1: 50, item2: 30, item3: 10 };
+                localStorage.setItem('stockLevels', JSON.stringify(initialStock));
+                loadStock();
             }
         }
 
         function saveStock() {
+            let stock1 = parseInt(document.getElementById('stock1').value) || 0;
+            let stock2 = parseInt(document.getElementById('stock2').value) || 0;
+            let stock3 = parseInt(document.getElementById('stock3').value) || 0;
+            
+            const add1 = parseInt(document.getElementById('add1').value) || 0;
+            const subtract1 = parseInt(document.getElementById('subtract1').value) || 0;
+            const add2 = parseInt(document.getElementById('add2').value) || 0;
+            const subtract2 = parseInt(document.getElementById('subtract2').value) || 0;
+            const add3 = parseInt(document.getElementById('add3').value) || 0;
+            const subtract3 = parseInt(document.getElementById('subtract3').value) || 0;
+
+            stock1 = stock1 + add1 - subtract1;
+            stock2 = stock2 + add2 - subtract2;
+            stock3 = stock3 + add3 - subtract3;
+
             const stock = {
-                item1: parseInt(document.getElementById('stock1').value) || 0,
-                item2: parseInt(document.getElementById('stock2').value) || 0,
-                item3: parseInt(document.getElementById('stock3').value) || 0
+                item1: stock1,
+                item2: stock2,
+                item3: stock3
             };
+            
             localStorage.setItem('stockLevels', JSON.stringify(stock));
             alert('재고가 저장되었습니다!');
+            
+            // 저장 후 추가/감모 입력칸 초기화 및 재고 업데이트
+            document.getElementById('add1').value = 0;
+            document.getElementById('subtract1').value = 0;
+            document.getElementById('add2').value = 0;
+            document.getElementById('subtract2').value = 0;
+            document.getElementById('add3').value = 0;
+            document.getElementById('subtract3').value = 0;
+            loadStock();
         }
 
         document.getElementById('save-stock-button').addEventListener('click', saveStock);
