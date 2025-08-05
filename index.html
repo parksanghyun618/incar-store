@@ -110,6 +110,21 @@
             const history = document.getElementById('sales-history').innerHTML;
             localStorage.setItem('salesHistory', history);
         }
+        
+        function deleteSale(event) {
+            const recordItem = event.target.closest('.sales-record-item');
+            const deletedData = JSON.parse(recordItem.dataset.sale);
+            
+            const savedStock = JSON.parse(localStorage.getItem('stockLevels'));
+            for (const itemId in deletedData.items) {
+                savedStock[itemId] += deletedData.items[itemId];
+            }
+            localStorage.setItem('stockLevels', JSON.stringify(savedStock));
+            loadStock();
+            
+            recordItem.remove();
+            saveHistoryToLocalStorage();
+        }
 
         function loadHistoryFromLocalStorage() {
             const savedHistory = localStorage.getItem('salesHistory');
@@ -118,12 +133,6 @@
             }
         }
         
-        function deleteSale(event) {
-            const recordItem = event.target.closest('.sales-record-item');
-            recordItem.remove();
-            saveHistoryToLocalStorage();
-        }
-
         function renderSaleRecord(saleRecordHTML) {
             const salesHistory = document.getElementById('sales-history');
             salesHistory.innerHTML = saleRecordHTML + salesHistory.innerHTML;
@@ -146,6 +155,7 @@
             
             const savedStock = JSON.parse(localStorage.getItem('stockLevels'));
             let saleDetails = '<ul>';
+            let saleItemsData = {};
             
             let stockError = false;
             allItems.forEach(item => {
@@ -158,6 +168,7 @@
                     }
                     savedStock[item.id] -= quantity;
                     saleDetails += `<li>${item.name}: ${quantity}개 (${item.price * quantity}원)</li>`;
+                    saleItemsData[item.id] = quantity;
                 }
             });
 
@@ -172,8 +183,15 @@
             const received = document.getElementById('received-amount').value;
             const change = document.getElementById('change').innerText;
 
+            const saleData = {
+                items: saleItemsData,
+                total: total,
+                received: received,
+                change: change
+            };
+
             const saleRecordHTML = `
-                <div class="sales-record-item">
+                <div class="sales-record-item" data-sale='${JSON.stringify(saleData)}'>
                     <div class="sales-record-summary">
                         <span>${time} - 총 금액: ${total}원</span>
                         <div>
