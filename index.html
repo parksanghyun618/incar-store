@@ -18,6 +18,9 @@
         .sales-record-summary { display: flex; justify-content: space-between; align-items: center; padding: 10px; cursor: pointer; background-color: #f9f9f9; }
         .sales-record-details { padding: 10px; border-top: 1px solid #ddd; display: none; }
         .delete-button { background-color: #f44336; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+        .pagination { text-align: center; margin-top: 20px; }
+        .pagination button { margin: 0 5px; cursor: pointer; padding: 5px 10px; }
+        .pagination button.active { background-color: #007bff; color: white; border: 1px solid #007bff; }
     </style>
 </head>
 <body>
@@ -64,6 +67,8 @@
     <h2>판매 기록</h2>
     <div id="sales-history">
         </div>
+    <div id="pagination-container" class="pagination">
+        </div>
     <p>총 매출액: <span id="total-revenue">0</span> 원</p>
 
 
@@ -73,6 +78,9 @@
             { name: '물품 2', id: 'item2', price: 1200 },
             { name: '물품 3', id: 'item3', price: 2500 }
         ];
+
+        let currentPage = 1;
+        const recordsPerPage = 10;
 
         function loadStock() {
             const savedStock = localStorage.getItem('stockLevels');
@@ -143,11 +151,19 @@
         
         function renderSalesHistory() {
             const salesHistoryDiv = document.getElementById('sales-history');
+            const paginationDiv = document.getElementById('pagination-container');
             salesHistoryDiv.innerHTML = '';
-            
+            paginationDiv.innerHTML = '';
+
             let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
-            
-            salesHistory.forEach((record, index) => {
+            const totalPages = Math.ceil(salesHistory.length / recordsPerPage);
+
+            const start = (currentPage - 1) * recordsPerPage;
+            const end = start + recordsPerPage;
+            const recordsToDisplay = salesHistory.slice(start, end);
+
+            recordsToDisplay.forEach((record, index) => {
+                const globalIndex = start + index;
                 let saleDetailsHtml = '<ul>';
                 for (const itemId in record.items) {
                     const item = allItems.find(i => i.id === itemId);
@@ -156,9 +172,9 @@
                 saleDetailsHtml += '</ul>';
 
                 const saleRecordHtml = `
-                    <div class="sales-record-item" data-index="${index}">
+                    <div class="sales-record-item" data-index="${globalIndex}">
                         <div class="sales-record-summary">
-                            <span>${record.time} - 총 금액: ${record.total}원</span>
+                            <span>${record.date} ${record.time} - 총 금액: ${record.total}원</span>
                             <div>
                                 <button class="delete-button">삭제</button>
                                 <span>▼</span>
@@ -185,10 +201,27 @@
                 });
                 deleteButton.addEventListener('click', deleteSale);
             });
+
+            // 페이지네이션 버튼 생성
+            if (totalPages > 1) {
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageButton = document.createElement('button');
+                    pageButton.innerText = i;
+                    if (i === currentPage) {
+                        pageButton.classList.add('active');
+                    }
+                    pageButton.addEventListener('click', () => {
+                        currentPage = i;
+                        renderSalesHistory();
+                    });
+                    paginationDiv.appendChild(pageButton);
+                }
+            }
         }
         
         function saveSale() {
             const now = new Date();
+            const date = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
             const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             
             const savedStock = JSON.parse(localStorage.getItem('stockLevels')) || {};
@@ -221,6 +254,7 @@
             const change = received - total;
             
             const newRecord = {
+                date: date,
                 time: time,
                 total: total,
                 received: received,
