@@ -22,6 +22,7 @@
 </head>
 <body>
     <h1>편의점 계산기</h1>
+    <p><a href="stock.html">재고 관리 페이지로 이동</a></p>
     
     <h2>판매 목록</h2>
     <div class="item-list">
@@ -29,18 +30,21 @@
             <span>물품 1: </span>
             <input type="number" id="item1-price" value="1500" hidden>
             <input type="number" id="item1-quantity" value="0" min="0"> 개
+            <span class="stock-info" id="item1-stock"></span>
             <span> (1500원)</span>
         </div>
         <div class="item-row">
             <span>물품 2: </span>
             <input type="number" id="item2-price" value="1200" hidden>
             <input type="number" id="item2-quantity" value="0" min="0"> 개
+            <span class="stock-info" id="item2-stock"></span>
             <span> (1200원)</span>
         </div>
         <div class="item-row">
             <span>물품 3: </span>
             <input type="number" id="item3-price" value="2500" hidden>
             <input type="number" id="item3-quantity" value="0" min="0"> 개
+            <span class="stock-info" id="item3-stock"></span>
             <span> (2500원)</span>
         </div>
     </div>
@@ -62,14 +66,29 @@
         </div>
 
     <script>
-        // 물품 정보 (나중에 재고 관리와 연동될 예정)
         const allItems = [
             { name: '물품 1', id: 'item1', price: 1500 },
             { name: '물품 2', id: 'item2', price: 1200 },
             { name: '물품 3', id: 'item3', price: 2500 }
         ];
 
-        // 물품 수량이 바뀌면 총 합계를 계산하는 함수
+        function loadStock() {
+            const savedStock = localStorage.getItem('stockLevels');
+            if (savedStock) {
+                const stock = JSON.parse(savedStock);
+                allItems.forEach(item => {
+                    const stockSpan = document.getElementById(`${item.id}-stock`);
+                    if (stockSpan) {
+                        stockSpan.innerText = `(재고: ${stock[item.id]})`;
+                    }
+                });
+            } else {
+                const initialStock = { item1: 50, item2: 30, item3: 10 };
+                localStorage.setItem('stockLevels', JSON.stringify(initialStock));
+                loadStock();
+            }
+        }
+        
         function calculateTotal() {
             let total = 0;
             allItems.forEach(item => {
@@ -80,7 +99,6 @@
             calculateChange();
         }
 
-        // 받은 금액이 바뀌면 거스름돈을 계산하는 함수
         function calculateChange() {
             const total = parseInt(document.getElementById('total').innerText);
             const received = parseInt(document.getElementById('received-amount').value) || 0;
@@ -88,13 +106,11 @@
             document.getElementById('change').innerText = Math.max(0, change);
         }
 
-        // 판매 기록을 localStorage에 저장하는 함수
         function saveHistoryToLocalStorage() {
             const history = document.getElementById('sales-history').innerHTML;
             localStorage.setItem('salesHistory', history);
         }
 
-        // 페이지 로딩 시 localStorage에서 기록을 불러오는 함수
         function loadHistoryFromLocalStorage() {
             const savedHistory = localStorage.getItem('salesHistory');
             if (savedHistory) {
@@ -102,18 +118,16 @@
             }
         }
         
-        // 판매 기록을 삭제하는 함수
         function deleteSale(event) {
             const recordItem = event.target.closest('.sales-record-item');
             recordItem.remove();
             saveHistoryToLocalStorage();
         }
 
-        // 판매 기록을 페이지에 렌더링하고 이벤트 리스너를 추가하는 함수
         function renderSaleRecord(saleRecordHTML) {
             const salesHistory = document.getElementById('sales-history');
             salesHistory.innerHTML = saleRecordHTML + salesHistory.innerHTML;
-
+            
             const newRecord = salesHistory.firstElementChild;
             const summary = newRecord.querySelector('.sales-record-summary');
             const details = newRecord.querySelector('.sales-record-details');
@@ -126,18 +140,32 @@
             saveHistoryToLocalStorage();
         }
 
-        // 저장 버튼 클릭 시 판매 기록을 페이지에 남기는 함수
         function saveSale() {
             const now = new Date();
             const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             
+            const savedStock = JSON.parse(localStorage.getItem('stockLevels'));
             let saleDetails = '<ul>';
+            
+            let stockError = false;
             allItems.forEach(item => {
                 const quantity = parseInt(document.getElementById(`${item.id}-quantity`).value);
                 if (quantity > 0) {
+                    if (savedStock[item.id] < quantity) {
+                        alert(`${item.name}의 재고가 부족합니다!`);
+                        stockError = true;
+                        return;
+                    }
+                    savedStock[item.id] -= quantity;
                     saleDetails += `<li>${item.name}: ${quantity}개 (${item.price * quantity}원)</li>`;
                 }
             });
+
+            if (stockError || saleDetails === '<ul>') return;
+
+            localStorage.setItem('stockLevels', JSON.stringify(savedStock));
+            loadStock();
+
             saleDetails += '</ul>';
             
             const total = document.getElementById('total').innerText;
@@ -164,7 +192,6 @@
             
             renderSaleRecord(saleRecordHTML);
 
-            // 입력창 초기화
             allItems.forEach(item => {
                 document.getElementById(`${item.id}-quantity`).value = 0;
             });
@@ -173,15 +200,16 @@
             alert('판매 기록이 저장되었습니다!');
         }
 
-        // 이벤트 리스너 설정
         document.getElementById('item1-quantity').addEventListener('input', calculateTotal);
         document.getElementById('item2-quantity').addEventListener('input', calculateTotal);
         document.getElementById('item3-quantity').addEventListener('input', calculateTotal);
         document.getElementById('received-amount').addEventListener('input', calculateChange);
         document.getElementById('save-button').addEventListener('click', saveSale);
 
-        // 페이지 로딩 시 기록 불러오기
-        window.addEventListener('DOMContentLoaded', loadHistoryFromLocalStorage);
+        window.addEventListener('DOMContentLoaded', () => {
+            loadHistoryFromLocalStorage();
+            loadStock();
+        });
     </script>
 </body>
 </html>
