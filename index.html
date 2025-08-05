@@ -10,10 +10,10 @@
         .item-list { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; }
         .item-row { display: flex; align-items: center; margin-bottom: 10px; }
         .item-row input { margin-left: 10px; width: 60px; }
-        #total, #change, #total-revenue { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
+        .total-section { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        #total-krw, #total-idr { font-size: 1.2em; font-weight: bold; margin-top: 5px; }
+        #donation, #total-revenue { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
         button { padding: 10px 20px; }
-
-        /* 판매 기록 스타일 */
         .sales-record-item { border: 1px solid #ddd; margin-bottom: 10px; }
         .sales-record-summary { display: flex; justify-content: space-between; align-items: center; padding: 10px; cursor: pointer; background-color: #f9f9f9; }
         .sales-record-details { padding: 10px; border-top: 1px solid #ddd; display: none; }
@@ -21,6 +21,7 @@
         .pagination { text-align: center; margin-top: 20px; }
         .pagination button { margin: 0 5px; cursor: pointer; padding: 5px 10px; }
         .pagination button.active { background-color: #007bff; color: white; border: 1px solid #007bff; }
+        #currency-selector { margin-bottom: 15px; padding: 8px; }
     </style>
 </head>
 <body>
@@ -28,38 +29,30 @@
     <p><a href="stock.html">재고 관리 페이지로 이동</a></p>
     
     <h2>판매 목록</h2>
-    <div class="item-list">
-        <div class="item-row">
-            <span>물품 1: </span>
-            <input type="number" id="item1-price" value="1500" hidden>
-            <input type="number" id="item1-quantity" value="" min="0"> 개
-            <span class="stock-info" id="item1-stock"></span>
-            <span> (1500원)</span>
+    <div class="item-list" id="item-list">
         </div>
-        <div class="item-row">
-            <span>물품 2: </span>
-            <input type="number" id="item2-price" value="1200" hidden>
-            <input type="number" id="item2-quantity" value="" min="0"> 개
-            <span class="stock-info" id="item2-stock"></span>
-            <span> (1200원)</span>
-        </div>
-        <div class="item-row">
-            <span>물품 3: </span>
-            <input type="number" id="item3-price" value="2500" hidden>
-            <input type="number" id="item3-quantity" value="" min="0"> 개
-            <span class="stock-info" id="item3-stock"></span>
-            <span> (2500원)</span>
-        </div>
+
+    <hr>
+    <div>
+        <label for="currency-selector">결제 통화:</label>
+        <select id="currency-selector">
+            <option value="krw">₩ 원화 (KRW)</option>
+            <option value="idr">Rp 루피아 (IDR)</option>
+        </select>
     </div>
 
-    <p>총 합계: <span id="total">0</span> 원</p>
+    <div class="total-section">
+        <p>총 합계:</p>
+        <p><span id="total-krw">0 원</span></p>
+    </div>
     
     <div>
         <label for="received-amount">받은 금액:</label>
-        <input type="number" id="received-amount" min="0"> 원
+        <input type="number" id="received-amount" min="0">
+        <span id="received-currency">원</span>
     </div>
     
-    <p>거스름돈: <span id="change">0</span> 원</p>
+    <p>기부금: <span id="donation">0</span> <span id="donation-currency">원</span></p>
     
     <button id="save-button">저장</button>
 
@@ -73,125 +66,230 @@
 
 
     <script>
-        const allItems = [
-            { name: '물품 1', id: 'item1', price: 1500 },
-            { name: '물품 2', id: 'item2', price: 1200 },
-            { name: '물품 3', id: 'item3', price: 2500 }
-        ];
+        // 💡 여기에 구글 앱스 스크립트 배포 시 복사한 웹 앱 URL을 붙여넣으세요!
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyMLM-EZCrArJ31m84oyMnSlO0FM3QYisJWtJNfTLAZzkFGcf4uZKZw2oDiJnjBTUQD/exec';
 
         let currentPage = 1;
         const recordsPerPage = 10;
         let previousDate = null;
+        let allSalesRecords = [];
+        let allItems = [];
+        let itemPrices = {};
 
-        function loadStock() {
-            const savedStock = localStorage.getItem('stockLevels');
-            if (savedStock) {
-                const stock = JSON.parse(savedStock);
-                allItems.forEach(item => {
-                    const stockSpan = document.getElementById(`${item.id}-stock`);
-                    if (stockSpan) {
-                        stockSpan.innerText = `(재고: ${stock[item.id]})`;
-                    }
-                });
-            } else {
-                const initialStock = { item1: 50, item2: 30, item3: 10 };
-                localStorage.setItem('stockLevels', JSON.stringify(initialStock));
-                loadStock();
-            }
+        async function fetchPrices() {
+            const response = await fetch(`${WEB_APP_URL}?sheet=prices`);
+            const prices = await response.json();
+            return prices;
+        }
+
+        async function fetchStock() {
+            const response = await fetch(`${WEB_APP_URL}?sheet=stock`);
+            const stock = await response.json();
+            return stock;
+        }
+
+        async function saveStock(stockLevels) {
+            await fetch(`${WEB_APP_URL}?sheet=stock`, {
+                method: 'POST',
+                body: JSON.stringify({ stockLevels: stockLevels }),
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
         
-        function calculateTotal() {
-            let total = 0;
-            allItems.forEach(item => {
-                const quantity = parseInt(document.getElementById(`${item.id}-quantity`).value) || 0;
-                total += item.price * quantity;
-            });
-            document.getElementById('total').innerText = total;
-            calculateChange();
+        async function fetchSalesHistory() {
+            const response = await fetch(`${WEB_APP_URL}?sheet=sales`);
+            const sales = await response.json();
+            allSalesRecords = sales;
+            return sales;
         }
 
-        function calculateChange() {
-            const total = parseInt(document.getElementById('total').innerText);
+        async function saveSaleRecord(newRecord) {
+            await fetch(`${WEB_APP_URL}?sheet=sales`, {
+                method: 'POST',
+                body: JSON.stringify(newRecord),
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        
+        async function loadPricesAndRender() {
+            allItems = await fetchPrices();
+            const itemListDiv = document.getElementById('item-list');
+            itemListDiv.innerHTML = '';
+            
+            allItems.forEach(item => {
+                itemPrices[item.item_id] = { krw: item.price_krw, idr: item.price_idr, name: item.name };
+                const itemRow = document.createElement('div');
+                itemRow.className = 'item-row';
+                itemRow.innerHTML = `
+                    <span>${item.name}: </span>
+                    <input type="number" data-id="${item.item_id}" class="item-quantity" value="" min="0"> 개
+                    <span class="stock-info" id="${item.item_id}-stock"></span>
+                `;
+                itemListDiv.appendChild(itemRow);
+            });
+            
+            document.querySelectorAll('.item-quantity').forEach(input => {
+                input.addEventListener('input', calculateTotal);
+            });
+        }
+
+        async function loadStockAndRender() {
+            const stock = await fetchStock();
+            allItems.forEach(item => {
+                const stockSpan = document.getElementById(`${item.item_id}-stock`);
+                if (stockSpan) {
+                    stockSpan.innerText = `(재고: ${stock[item.item_id] || 0})`;
+                }
+            });
+        }
+
+        function calculateTotal() {
+            const currency = document.getElementById('currency-selector').value;
+            let total = 0;
+            document.querySelectorAll('.item-quantity').forEach(input => {
+                const quantity = parseInt(input.value) || 0;
+                const itemId = input.dataset.id;
+                const priceKey = `price_${currency}`;
+                total += itemPrices[itemId][priceKey] * quantity;
+            });
+            
+            const totalSpan = document.getElementById('total-krw');
+            totalSpan.innerText = `${total.toLocaleString()} ${currency === 'krw' ? '원' : '루피아'}`;
+            calculateDonation();
+        }
+
+        function calculateDonation() {
+            const total = parseFloat(document.getElementById('total-krw').innerText.replace(/[^\d]/g, ''));
             const received = parseInt(document.getElementById('received-amount').value) || 0;
-            const change = received - total;
-            document.getElementById('change').innerText = Math.max(0, change);
+            const donation = received - total;
+            
+            const donationSpan = document.getElementById('donation');
+            const donationCurrencySpan = document.getElementById('donation-currency');
+            donationSpan.innerText = Math.max(0, donation).toLocaleString();
+            donationCurrencySpan.innerText = document.getElementById('received-currency').innerText;
+        }
+        
+        function updateCurrencyDisplay() {
+            const currency = document.getElementById('currency-selector').value;
+            const currencyText = currency === 'krw' ? '원' : '루피아';
+            document.getElementById('received-currency').innerText = currencyText;
+            document.getElementById('donation-currency').innerText = currencyText;
+            calculateTotal();
         }
 
         function calculateTotalRevenue() {
             let totalRevenue = 0;
-            let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
-            salesHistory.forEach(record => {
-                totalRevenue += parseInt(record.total);
+            allSalesRecords.forEach(record => {
+                if (record['판매통화'] === 'krw') {
+                    totalRevenue += parseInt(record['총금액']);
+                }
             });
-            document.getElementById('total-revenue').innerText = totalRevenue;
+            document.getElementById('total-revenue').innerText = totalRevenue.toLocaleString();
         }
 
-        function saveHistoryToLocalStorage(history) {
-            localStorage.setItem('salesHistory', JSON.stringify(history));
-        }
-
-        function deleteSale(event) {
-            const recordItem = event.target.closest('.sales-record-item');
-            const index = parseInt(recordItem.dataset.index);
+        async function saveSale() {
+            const now = new Date();
+            const date = `${now.getFullYear().toString().slice(-2)}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+            const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             
-            let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
-            const deletedRecord = salesHistory[index];
+            let noItemsSelected = true;
+            const saleItemsData = {};
+            const currentStock = await fetchStock();
 
-            const savedStock = JSON.parse(localStorage.getItem('stockLevels'));
-            for (const itemId in deletedRecord.items) {
-                savedStock[itemId] += deletedRecord.items[itemId];
+            document.querySelectorAll('.item-quantity').forEach(input => {
+                const quantity = parseInt(input.value) || 0;
+                const itemId = input.dataset.id;
+                if (quantity > 0) {
+                    currentStock[itemId] -= quantity;
+                    saleItemsData[itemId] = quantity;
+                    noItemsSelected = false;
+                }
+            });
+
+            if (noItemsSelected) {
+                alert('판매할 물품을 선택해주세요!');
+                return;
             }
-            localStorage.setItem('stockLevels', JSON.stringify(savedStock));
-            loadStock();
             
-            salesHistory.splice(index, 1);
-            saveHistoryToLocalStorage(salesHistory);
-            renderSalesHistory();
+            await saveStock(currentStock);
+            await loadStockAndRender();
+            
+            const totalString = document.getElementById('total-krw').innerText.replace(/[^\d]/g, '');
+            const total = parseFloat(totalString);
+            
+            let received = parseInt(document.getElementById('received-amount').value) || total;
+            const donation = received - total;
+            const currency = document.getElementById('currency-selector').value;
+            
+            const newRecord = {
+                date: date,
+                time: time,
+                currency: currency,
+                total: total,
+                received: received,
+                donation: donation,
+                items: saleItemsData
+            };
+            
+            await saveSaleRecord(newRecord);
+            await renderSalesHistory();
             calculateTotalRevenue();
+
+            document.querySelectorAll('.item-quantity').forEach(input => input.value = '');
+            document.getElementById('received-amount').value = '';
+            calculateTotal();
+            alert('판매 기록이 저장되었습니다!');
         }
         
-        function renderSalesHistory() {
+        async function deleteSale(event) {
+            alert('현재 삭제 기능은 제공되지 않습니다. 스프레드시트에서 직접 삭제해주세요.');
+            return;
+        }
+
+        async function renderSalesHistory() {
             const salesHistoryDiv = document.getElementById('sales-history');
             const paginationDiv = document.getElementById('pagination-container');
             salesHistoryDiv.innerHTML = '';
             paginationDiv.innerHTML = '';
             
+            await fetchSalesHistory();
             previousDate = null;
 
-            let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
-            const totalPages = Math.ceil(salesHistory.length / recordsPerPage);
-
+            const totalPages = Math.ceil(allSalesRecords.length / recordsPerPage);
             const start = (currentPage - 1) * recordsPerPage;
             const end = start + recordsPerPage;
-            const recordsToDisplay = salesHistory.slice(start, end);
+            const recordsToDisplay = allSalesRecords.slice(start, end);
 
             recordsToDisplay.forEach((record, index) => {
-                const globalIndex = start + index;
                 let saleDetailsHtml = '<ul>';
-                for (const itemId in record.items) {
-                    const item = allItems.find(i => i.id === itemId);
-                    saleDetailsHtml += `<li>${item.name}: ${record.items[itemId]}개 (${item.price * record.items[itemId]}원)</li>`;
+                for (const itemId in record['판매목록']) {
+                    const item = itemPrices[itemId];
+                    if (item) {
+                       const priceKey = `price_${record['판매통화']}`;
+                       saleDetailsHtml += `<li>${item.name}: ${record['판매목록'][itemId]}개 (${itemPrices[itemId][priceKey] * record['판매목록'][itemId]} ${record['판매통화'] === 'krw' ? '원' : '루피아'})</li>`;
+                    }
                 }
                 saleDetailsHtml += '</ul>';
 
                 let displayDate = '';
-                if (record.date !== previousDate) {
-                    displayDate = record.date;
-                    previousDate = record.date;
+                if (record['날짜'] !== previousDate) {
+                    displayDate = record['날짜'];
+                    previousDate = record['날짜'];
                 }
 
+                const totalCurrency = record['판매통화'] === 'krw' ? '원' : '루피아';
                 const saleRecordHtml = `
-                    <div class="sales-record-item" data-index="${globalIndex}">
+                    <div class="sales-record-item">
                         <div class="sales-record-summary">
-                            <span>${displayDate}&nbsp;&nbsp;${record.time} - 총 금액: ${record.total}원</span>
+                            <span>${displayDate}&nbsp;&nbsp;${record['시간']} - 총 금액: ${record['총금액'].toLocaleString()} ${totalCurrency}</span>
                             <div>
-                                <button class="delete-button">삭제</button>
+                                <button class="delete-button" data-index="${start + index}">삭제</button>
                                 <span>▼</span>
                             </div>
                         </div>
                         <div class="sales-record-details">
-                            <p><strong>받은 금액:</strong> ${record.received}원</p>
-                            <p><strong>거스름돈:</strong> ${record.change}원</p>
+                            <p><strong>받은 금액:</strong> ${record['받은금액'].toLocaleString()} ${totalCurrency}</p>
+                            <p><strong>기부금:</strong> ${record['기부금'].toLocaleString()} ${totalCurrency}</p>
                             <p><strong>판매 목록:</strong></p>
                             ${saleDetailsHtml}
                         </div>
@@ -227,80 +325,23 @@
             }
         }
         
-        function saveSale() {
-            const now = new Date();
-            const date = `${now.getFullYear().toString().slice(-2)}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
-            const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-            
-            const savedStock = JSON.parse(localStorage.getItem('stockLevels')) || {};
-            let saleItemsData = {};
-            
-            let noItemsSelected = true;
-            allItems.forEach(item => {
-                const quantity = parseInt(document.getElementById(`${item.id}-quantity`).value);
-                if (quantity > 0) {
-                    savedStock[item.id] -= quantity;
-                    saleItemsData[item.id] = quantity;
-                    noItemsSelected = false;
-                }
-            });
-
-            if (noItemsSelected) {
-                alert('판매할 물품을 선택해주세요!');
-                return;
-            }
-
-            localStorage.setItem('stockLevels', JSON.stringify(savedStock));
-            loadStock();
-            
-            const total = parseInt(document.getElementById('total').innerText);
-            let received = parseInt(document.getElementById('received-amount').value);
-
-            if (isNaN(received)) {
-                received = total;
-            }
-            const change = received - total;
-            
-            const newRecord = {
-                date: date,
-                time: time,
-                total: total,
-                received: received,
-                change: change,
-                items: saleItemsData
-            };
-            
-            let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
-            salesHistory.unshift(newRecord);
-            
-            saveHistoryToLocalStorage(salesHistory);
-            renderSalesHistory();
-            calculateTotalRevenue();
-
-            allItems.forEach(item => {
-                document.getElementById(`${item.id}-quantity`).value = '';
-            });
-            document.getElementById('received-amount').value = '';
-            calculateTotal();
-            alert('판매 기록이 저장되었습니다!');
-        }
-        
         document.getElementById('received-amount').addEventListener('keydown', function(event) {
             if (event.key === 'Enter' || event.keyCode === 13) {
                 saveSale();
             }
         });
 
-        document.getElementById('item1-quantity').addEventListener('input', calculateTotal);
-        document.getElementById('item2-quantity').addEventListener('input', calculateTotal);
-        document.getElementById('item3-quantity').addEventListener('input', calculateTotal);
-        document.getElementById('received-amount').addEventListener('input', calculateChange);
+        document.getElementById('received-amount').addEventListener('input', calculateDonation);
         document.getElementById('save-button').addEventListener('click', saveSale);
+        document.getElementById('currency-selector').addEventListener('change', updateCurrencyDisplay);
 
-        window.addEventListener('DOMContentLoaded', () => {
-            renderSalesHistory();
-            loadStock();
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadPricesAndRender();
+            await renderSalesHistory();
+            await loadStockAndRender();
             calculateTotalRevenue();
+            updateCurrencyDisplay();
         });
     </script>
 </body>
