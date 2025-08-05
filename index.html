@@ -50,6 +50,43 @@
 
     <button id="calculate-button">계산</button>
     <button id="save-button">저장</button>
+<script>
+    // 이 안에 계산기 기능을 넣을 거예요!
 
+    // 물품 수량이 바뀌면 총 합계를 계산하는 함수
+    function calculateTotal() {
+        let total = 0;
+        const items = [
+            { id: 'item1', price: 1500 },
+            { id: 'item2', price: 1200 },
+            { id: 'item3', price: 2500 }
+        ];
+
+        items.forEach(item => {
+            const quantity = parseInt(document.getElementById(`${item.id}-quantity`).value) || 0;
+            total += item.price * quantity;
+        });
+
+        document.getElementById('total').innerText = total;
+        calculateChange(); // 총 합계가 바뀌면 거스름돈도 다시 계산
+    }
+
+    // 받은 금액이 바뀌면 거스름돈을 계산하는 함수
+    function calculateChange() {
+        const total = parseInt(document.getElementById('total').innerText);
+        const received = parseInt(document.getElementById('received-amount').value) || 0;
+        const change = received - total;
+
+        document.getElementById('change').innerText = Math.max(0, change);
+    }
+
+    // 물품 수량 입력 칸에 이벤트 리스너 추가
+    document.getElementById('item1-quantity').addEventListener('input', calculateTotal);
+    document.getElementById('item2-quantity').addEventListener('input', calculateTotal);
+    document.getElementById('item3-quantity').addEventListener('input', calculateTotal);
+
+    // 받은 금액 입력 칸에 이벤트 리스너 추가
+    document.getElementById('received-amount').addEventListener('input', calculateChange);
+</script>
 </body>
 </html>
