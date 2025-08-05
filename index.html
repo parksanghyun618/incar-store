@@ -16,7 +16,7 @@
 </head>
 <body>
     <h1>편의점 계산기</h1>
-
+    
     <h2>판매 목록</h2>
     <div class="item-list">
         <div class="item-row">
@@ -37,104 +37,54 @@
             <input type="number" id="item3-quantity" value="0" min="0"> 개
             <span> (2500원)</span>
         </div>
-        </div>
+    </div>
 
     <p>총 합계: <span id="total">0</span> 원</p>
-
+    
     <div>
         <label for="received-amount">받은 금액:</label>
         <input type="number" id="received-amount" min="0"> 원
     </div>
-
+    
     <p>거스름돈: <span id="change">0</span> 원</p>
-
-    <button id="calculate-button">계산</button>
+    
     <button id="save-button">저장</button>
-<script>
-    // 이 안에 계산기 기능을 넣을 거예요!
 
-    // 물품 수량이 바뀌면 총 합계를 계산하는 함수
-    function calculateTotal() {
-        let total = 0;
-        const items = [
-            { id: 'item1', price: 1500 },
-            { id: 'item2', price: 1200 },
-            { id: 'item3', price: 2500 }
-        ];
+    <script>
+        // 물품 수량이 바뀌면 총 합계를 계산하는 함수
+        function calculateTotal() {
+            let total = 0;
+            const items = [
+                { id: 'item1', price: 1500 },
+                { id: 'item2', price: 1200 },
+                { id: 'item3', price: 2500 }
+            ];
 
-        items.forEach(item => {
-            const quantity = parseInt(document.getElementById(`${item.id}-quantity`).value) || 0;
-            total += item.price * quantity;
-        });
+            items.forEach(item => {
+                const quantity = parseInt(document.getElementById(`${item.id}-quantity`).value) || 0;
+                total += item.price * quantity;
+            });
 
-        document.getElementById('total').innerText = total;
-        calculateChange(); // 총 합계가 바뀌면 거스름돈도 다시 계산
-    }
-
-    // 받은 금액이 바뀌면 거스름돈을 계산하는 함수
-    function calculateChange() {
-        const total = parseInt(document.getElementById('total').innerText);
-        const received = parseInt(document.getElementById('received-amount').value) || 0;
-        const change = received - total;
-
-        document.getElementById('change').innerText = Math.max(0, change);
-    }
-
-    // 물품 수량 입력 칸에 이벤트 리스너 추가
-    document.getElementById('item1-quantity').addEventListener('input', calculateTotal);
-    document.getElementById('item2-quantity').addEventListener('input', calculateTotal);
-    document.getElementById('item3-quantity').addEventListener('input', calculateTotal);
-
-    // 받은 금액 입력 칸에 이벤트 리스너 추가
-    document.getElementById('received-amount').addEventListener('input', calculateChange);
-    // 저장 버튼 클릭 시 판매 기록을 저장하는 함수
-function saveSale() {
-    const now = new Date();
-    const date = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
-    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-
-    let saleDetails = '판매 목록:\n';
-    const items = [
-        { name: '물품 1', quantityId: 'item1-quantity', price: 1500 },
-        { name: '물품 2', quantityId: 'item2-quantity', price: 1200 },
-        { name: '물품 3', quantityId: 'item3-quantity', price: 2500 }
-    ];
-
-    items.forEach(item => {
-        const quantity = parseInt(document.getElementById(item.quantityId).value);
-        if (quantity > 0) {
-            saleDetails += `- ${item.name}: ${quantity}개 (${item.price * quantity}원)\n`;
+            document.getElementById('total').innerText = total;
+            calculateChange();
         }
-    });
 
-    const total = document.getElementById('total').innerText;
-    const received = document.getElementById('received-amount').value;
-    const change = document.getElementById('change').innerText;
+        // 받은 금액이 바뀌면 거스름돈을 계산하는 함수
+        function calculateChange() {
+            const total = parseInt(document.getElementById('total').innerText);
+            const received = parseInt(document.getElementById('received-amount').value) || 0;
+            const change = received - total;
 
-    const saleRecord = `
-     // 파일을 생성하고 다운로드하는 코드
-    const blob = new Blob([saleRecord], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `판매기록_${date}_${time}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+            document.getElementById('change').innerText = Math.max(0, change);
+        }
 
-    // 입력창 초기화
-    items.forEach(item => {
-        document.getElementById(item.quantityId).value = 0;
-    });
-    document.getElementById('received-amount').value = '';
-    calculateTotal(); // 초기화 후 계산
-    alert('판매 기록이 저장되었습니다!');
-}
-
-// 저장 버튼에 이벤트 리스너 추가
-document.getElementById('save-button').addEventListener('click', saveSale);
-```
-</script>
-</body>
-</html>
+        // 저장 버튼 클릭 시 판매 기록을 저장하는 함수
+        function saveSale() {
+            const now = new Date();
+            const date = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+            const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            
+            let saleDetails = '판매 목록:\n';
+            const items = [
+                { name: '물품 1', quantityId: 'item1-quantity', price: 1500 },
+                { name
