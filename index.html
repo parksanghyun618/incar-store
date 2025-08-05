@@ -106,17 +106,15 @@
             document.getElementById('change').innerText = Math.max(0, change);
         }
 
-        // 판매 기록을 localStorage에 저장하는 함수
         function saveHistoryToLocalStorage(history) {
             localStorage.setItem('salesHistory', JSON.stringify(history));
         }
 
-        // 판매 기록을 삭제하는 함수
         function deleteSale(event) {
             const recordItem = event.target.closest('.sales-record-item');
-            const index = recordItem.dataset.index;
+            const index = parseInt(recordItem.dataset.index);
             
-            let salesHistory = JSON.parse(localStorage.getItem('salesHistory'));
+            let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
             const deletedRecord = salesHistory[index];
 
             const savedStock = JSON.parse(localStorage.getItem('stockLevels'));
@@ -131,7 +129,6 @@
             renderSalesHistory();
         }
         
-        // localStorage에서 기록을 불러와서 화면에 그리는 함수
         function renderSalesHistory() {
             const salesHistoryDiv = document.getElementById('sales-history');
             salesHistoryDiv.innerHTML = '';
@@ -166,7 +163,6 @@
                 salesHistoryDiv.innerHTML += saleRecordHtml;
             });
             
-            // 모든 기록에 대해 이벤트 리스너를 다시 연결
             document.querySelectorAll('.sales-record-item').forEach(record => {
                 const summary = record.querySelector('.sales-record-summary');
                 const details = record.querySelector('.sales-record-details');
@@ -179,12 +175,11 @@
             });
         }
         
-        // 저장 버튼 클릭 시 판매 기록을 남기는 함수
         function saveSale() {
             const now = new Date();
             const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             
-            const savedStock = JSON.parse(localStorage.getItem('stockLevels'));
+            const savedStock = JSON.parse(localStorage.getItem('stockLevels')) || {};
             let saleItemsData = {};
             
             let stockError = false;
