@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>재고 관리</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; }
+        h1 { text-align: center; }
+        .stock-list { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; }
+        .stock-item { margin-bottom: 15px; }
+        .stock-item span { font-weight: bold; }
+        .stock-item input { width: 80px; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>재고 관리</h1>
+    <p><a href="index.html">계산기 페이지로 돌아가기</a></p>
+    
+    <div class="stock-list">
+        <div class="stock-item">
+            <span>물품 1 재고:</span>
+            <input type="number" id="stock1" value="50" min="0"> 개
+        </div>
+        <div class="stock-item">
+            <span>물품 2 재고:</span>
+            <input type="number" id="stock2" value="30" min="0"> 개
+        </div>
+        <div class="stock-item">
+            <span>물품 3 재고:</span>
+            <input type="number" id="stock3" value="10" min="0"> 개
+        </div>
+    </div>
+
+    <button id="save-stock-button">재고 저장</button>
+
+    <script>
+        function loadStock() {
+            const savedStock = localStorage.getItem('stockLevels');
+            if (savedStock) {
+                const stock = JSON.parse(savedStock);
+                document.getElementById('stock1').value = stock.item1;
+                document.getElementById('stock2').value = stock.item2;
+                document.getElementById('stock3').value = stock.item3;
+            }
+        }
+
+        function saveStock() {
+            const stock = {
+                item1: parseInt(document.getElementById('stock1').value) || 0,
+                item2: parseInt(document.getElementById('stock2').value) || 0,
+                item3: parseInt(document.getElementById('stock3').value) || 0
+            };
+            localStorage.setItem('stockLevels', JSON.stringify(stock));
+            alert('재고가 저장되었습니다!');
+        }
+
+        document.getElementById('save-stock-button').addEventListener('click', saveStock);
+        window.addEventListener('DOMContentLoaded', loadStock);
+    </script>
+</body>
+</html>
