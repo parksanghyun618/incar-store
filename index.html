@@ -3,10 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 편의점 계산기</title>
+    <title>편의점 계산기</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; }
+        h1 { text-align: center; }
+        .item-list { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; }
+        .item-row { display: flex; align-items: center; margin-bottom: 10px; }
+        .item-row input { margin-left: 10px; width: 60px; }
+        #total, #change { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
+        button { padding: 10px 20px; }
+    </style>
 </head>
 <body>
-    <h1>안녕하세요!</h1>
-    <p>편의점에 오신 것을 환영합니다.</p>
+    <h1>편의점 계산기</h1>
+
+    <h2>판매 목록</h2>
+    <div class="item-list">
+        <div class="item-row">
+            <span>물품 1: </span>
+            <input type="number" id="item1-price" value="1500" hidden>
+            <input type="number" id="item1-quantity" value="0" min="0"> 개
+            <span> (1500원)</span>
+        </div>
+        <div class="item-row">
+            <span>물품 2: </span>
+            <input type="number" id="item2-price" value="1200" hidden>
+            <input type="number" id="item2-quantity" value="0" min="0"> 개
+            <span> (1200원)</span>
+        </div>
+        <div class="item-row">
+            <span>물품 3: </span>
+            <input type="number" id="item3-price" value="2500" hidden>
+            <input type="number" id="item3-quantity" value="0" min="0"> 개
+            <span> (2500원)</span>
+        </div>
+        </div>
+
+    <p>총 합계: <span id="total">0</span> 원</p>
+
+    <div>
+        <label for="received-amount">받은 금액:</label>
+        <input type="number" id="received-amount" min="0"> 원
+    </div>
+
+    <p>거스름돈: <span id="change">0</span> 원</p>
+
+    <button id="calculate-button">계산</button>
+    <button id="save-button">저장</button>
+
 </body>
 </html>
