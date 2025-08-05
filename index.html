@@ -10,7 +10,7 @@
         .item-list { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; }
         .item-row { display: flex; align-items: center; margin-bottom: 10px; }
         .item-row input { margin-left: 10px; width: 60px; }
-        #total, #change { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
+        #total, #change, #total-revenue { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
         button { padding: 10px 20px; }
 
         /* 판매 기록 스타일 */
@@ -21,7 +21,7 @@
     </style>
 </head>
 <body>
-    <h1>편의점 계산기</h1>
+    <h1>인카마트 포스기</h1>
     <p><a href="stock.html">재고 관리 페이지로 이동</a></p>
     
     <h2>판매 목록</h2>
@@ -64,6 +64,8 @@
     <h2>판매 기록</h2>
     <div id="sales-history">
         </div>
+    <p>총 매출액: <span id="total-revenue">0</span> 원</p>
+
 
     <script>
         const allItems = [
@@ -106,6 +108,15 @@
             document.getElementById('change').innerText = Math.max(0, change);
         }
 
+        function calculateTotalRevenue() {
+            let totalRevenue = 0;
+            let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
+            salesHistory.forEach(record => {
+                totalRevenue += parseInt(record.total);
+            });
+            document.getElementById('total-revenue').innerText = totalRevenue;
+        }
+
         function saveHistoryToLocalStorage(history) {
             localStorage.setItem('salesHistory', JSON.stringify(history));
         }
@@ -127,6 +138,7 @@
             salesHistory.splice(index, 1);
             saveHistoryToLocalStorage(salesHistory);
             renderSalesHistory();
+            calculateTotalRevenue();
         }
         
         function renderSalesHistory() {
@@ -182,28 +194,31 @@
             const savedStock = JSON.parse(localStorage.getItem('stockLevels')) || {};
             let saleItemsData = {};
             
-            let stockError = false;
+            let noItemsSelected = true;
             allItems.forEach(item => {
                 const quantity = parseInt(document.getElementById(`${item.id}-quantity`).value);
                 if (quantity > 0) {
-                    if (savedStock[item.id] < quantity) {
-                        alert(`${item.name}의 재고가 부족합니다!`);
-                        stockError = true;
-                        return;
-                    }
                     savedStock[item.id] -= quantity;
                     saleItemsData[item.id] = quantity;
+                    noItemsSelected = false;
                 }
             });
 
-            if (stockError || Object.keys(saleItemsData).length === 0) return;
+            if (noItemsSelected) {
+                alert('판매할 물품을 선택해주세요!');
+                return;
+            }
 
             localStorage.setItem('stockLevels', JSON.stringify(savedStock));
             loadStock();
             
-            const total = document.getElementById('total').innerText;
-            const received = document.getElementById('received-amount').value;
-            const change = document.getElementById('change').innerText;
+            const total = parseInt(document.getElementById('total').innerText);
+            let received = parseInt(document.getElementById('received-amount').value);
+
+            if (isNaN(received)) {
+                received = total;
+            }
+            const change = received - total;
             
             const newRecord = {
                 time: time,
@@ -218,6 +233,7 @@
             
             saveHistoryToLocalStorage(salesHistory);
             renderSalesHistory();
+            calculateTotalRevenue();
 
             allItems.forEach(item => {
                 document.getElementById(`${item.id}-quantity`).value = '';
@@ -242,6 +258,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             renderSalesHistory();
             loadStock();
+            calculateTotalRevenue();
         });
     </script>
 </body>
