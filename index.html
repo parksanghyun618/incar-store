@@ -12,6 +12,11 @@
         .item-row input { margin-left: 10px; width: 60px; }
         #total, #change { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
         button { padding: 10px 20px; }
+
+        /* 새로운 판매 기록 스타일 */
+        .sales-record-item { border: 1px solid #ddd; margin-bottom: 10px; }
+        .sales-record-summary { display: flex; justify-content: space-between; padding: 10px; cursor: pointer; background-color: #f9f9f9; }
+        .sales-record-details { padding: 10px; border-top: 1px solid #ddd; display: none; }
     </style>
 </head>
 <body>
@@ -86,7 +91,6 @@
         // 저장 버튼 클릭 시 판매 기록을 페이지에 남기는 함수
         function saveSale() {
             const now = new Date();
-            const date = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
             const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             
             let saleDetails = '<ul>';
@@ -105,21 +109,37 @@
             saleDetails += '</ul>';
             
             const total = document.getElementById('total').innerText;
-            const received = document.getElementById('received-amount').value;
-            const change = document.getElementById('change').innerText;
-
+            
             const saleRecordHTML = `
-                <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
-                    <p><strong>판매일시:</strong> ${date} ${time}</p>
-                    <p><strong>총 합계:</strong> ${total}원</p>
-                    <p><strong>받은 금액:</strong> ${received}원</p>
-                    <p><strong>거스름돈:</strong> ${change}원</p>
-                    <p><strong>판매 목록:</strong></p>
-                    ${saleDetails}
+                <div class="sales-record-item">
+                    <div class="sales-record-summary">
+                        <span>${time} - 총 금액: ${total}원</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="sales-record-details">
+                        <p><strong>받은 금액:</strong> ${document.getElementById('received-amount').value}원</p>
+                        <p><strong>거스름돈:</strong> ${document.getElementById('change').innerText}원</p>
+                        <p><strong>판매 목록:</strong></p>
+                        ${saleDetails}
+                    </div>
                 </div>
             `;
             
-            document.getElementById('sales-history').innerHTML += saleRecordHTML;
+            // 판매 기록을 추가하고, 펼치기/접기 기능을 추가
+            const salesHistory = document.getElementById('sales-history');
+            salesHistory.innerHTML = saleRecordHTML + salesHistory.innerHTML;
+
+            const newRecord = salesHistory.firstElementChild;
+            const summary = newRecord.querySelector('.sales-record-summary');
+            const details = newRecord.querySelector('.sales-record-details');
+
+            summary.addEventListener('click', () => {
+                if (details.style.display === 'none') {
+                    details.style.display = 'block';
+                } else {
+                    details.style.display = 'none';
+                }
+            });
 
             // 입력창 초기화
             items.forEach(item => {
@@ -127,7 +147,6 @@
             });
             document.getElementById('received-amount').value = '';
             calculateTotal();
-            alert('판매 기록이 저장되었습니다!');
         }
 
         // 물품 수량 입력 칸에 이벤트 리스너 추가
