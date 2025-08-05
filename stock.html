@@ -1,3 +1,12 @@
+네, 재고 관리 페이지에서도 엔터키로 바로 저장되도록 만들고 싶으시군요. 당연히 가능합니다.
+
+계산기 페이지와 마찬가지로, 재고를 입력한 후 '재고 저장' 버튼을 누르는 대신 엔터키를 눌러도 저장되도록 코드를 수정해 드릴게요.
+
+아래 코드는 이 기능이 추가된 stock.html의 최종 코드입니다. 깃허브에서 stock.html 파일을 열고, 내용을 전부 복사해서 붙여넣은 뒤 저장하세요.
+
+stock.html 파일에 붙여넣을 최종 코드
+HTML
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -111,6 +120,23 @@
             document.getElementById('subtract3').value = '';
             loadStock();
         }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                saveStock();
+            }
+        }
+        
+        // 모든 입력 필드에 keydown 이벤트 리스너를 추가합니다.
+        document.getElementById('stock1').addEventListener('keydown', handleKeyDown);
+        document.getElementById('add1').addEventListener('keydown', handleKeyDown);
+        document.getElementById('subtract1').addEventListener('keydown', handleKeyDown);
+        document.getElementById('stock2').addEventListener('keydown', handleKeyDown);
+        document.getElementById('add2').addEventListener('keydown', handleKeyDown);
+        document.getElementById('subtract2').addEventListener('keydown', handleKeyDown);
+        document.getElementById('stock3').addEventListener('keydown', handleKeyDown);
+        document.getElementById('add3').addEventListener('keydown', handleKeyDown);
+        document.getElementById('subtract3').addEventListener('keydown', handleKeyDown);
 
         document.getElementById('save-stock-button').addEventListener('click', saveStock);
         window.addEventListener('DOMContentLoaded', loadStock);
