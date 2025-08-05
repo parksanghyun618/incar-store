@@ -50,6 +50,11 @@
     
     <button id="save-button">저장</button>
 
+    <hr>
+    <h2>판매 기록</h2>
+    <div id="sales-history">
+        </div>
+
     <script>
         // 물품 수량이 바뀌면 총 합계를 계산하는 함수
         function calculateTotal() {
@@ -78,13 +83,13 @@
             document.getElementById('change').innerText = Math.max(0, change);
         }
 
-        // 저장 버튼 클릭 시 판매 기록을 저장하는 함수
+        // 저장 버튼 클릭 시 판매 기록을 페이지에 남기는 함수
         function saveSale() {
             const now = new Date();
             const date = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
             const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             
-            let saleDetails = '판매 목록:\n';
+            let saleDetails = '<ul>';
             const items = [
                 { name: '물품 1', quantityId: 'item1-quantity', price: 1500 },
                 { name: '물품 2', quantityId: 'item2-quantity', price: 1200 },
@@ -94,34 +99,29 @@
             items.forEach(item => {
                 const quantity = parseInt(document.getElementById(item.quantityId).value);
                 if (quantity > 0) {
-                    saleDetails += `- ${item.name}: ${quantity}개 (${item.price * quantity}원)\n`;
+                    saleDetails += `<li>${item.name}: ${quantity}개 (${item.price * quantity}원)</li>`;
                 }
             });
+            saleDetails += '</ul>';
             
             const total = document.getElementById('total').innerText;
             const received = document.getElementById('received-amount').value;
             const change = document.getElementById('change').innerText;
 
-            const saleRecord = `
-판매일시: ${date} ${time}
-총 합계: ${total}원
-받은 금액: ${received}원
-거스름돈: ${change}원
-
-${saleDetails}
---------------------
-`;
+            const saleRecordHTML = `
+                <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
+                    <p><strong>판매일시:</strong> ${date} ${time}</p>
+                    <p><strong>총 합계:</strong> ${total}원</p>
+                    <p><strong>받은 금액:</strong> ${received}원</p>
+                    <p><strong>거스름돈:</strong> ${change}원</p>
+                    <p><strong>판매 목록:</strong></p>
+                    ${saleDetails}
+                </div>
+            `;
             
-            const blob = new Blob([saleRecord], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `판매기록_${date}_${time}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            document.getElementById('sales-history').innerHTML += saleRecordHTML;
 
+            // 입력창 초기화
             items.forEach(item => {
                 document.getElementById(item.quantityId).value = 0;
             });
